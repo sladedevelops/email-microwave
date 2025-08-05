@@ -117,6 +117,7 @@ Format the response as JSON with "subject" and "content" fields.`;
     const { error: saveError } = await supabase
       .from('emails')
       .insert({
+        user_id: user.id,
         subject: emailData.subject,
         content: emailData.content,
         from_email: user.email!,

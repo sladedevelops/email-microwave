@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { supabase, getCurrentUser } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
 
-type User = Database['public']['Tables']['users']['Row'];
+type UserProfile = Database['public']['Tables']['user_profiles']['Row'];
 
 export default function SupabaseExample() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -18,18 +18,18 @@ export default function SupabaseExample() {
       setCurrentUser(user);
     };
 
-    // Fetch users from Supabase
-    const fetchUsers = async () => {
+    // Fetch user profiles from Supabase
+    const fetchUserProfiles = async () => {
       try {
         const { data, error } = await supabase
-          .from('users')
+          .from('user_profiles')
           .select('*')
           .limit(10);
 
         if (error) {
-          console.error('Error fetching users:', error);
+          console.error('Error fetching user profiles:', error);
         } else {
-          setUsers(data || []);
+          setUserProfiles(data || []);
         }
       } catch (error) {
         console.error('Error:', error);
@@ -39,7 +39,7 @@ export default function SupabaseExample() {
     };
 
     fetchCurrentUser();
-    fetchUsers();
+    fetchUserProfiles();
   }, []);
 
   const handleSignIn = async () => {
@@ -107,17 +107,17 @@ export default function SupabaseExample() {
       </div>
 
       <div>
-        <h3 className="text-lg font-semibold mb-2">Users</h3>
-        {users.length > 0 ? (
+        <h3 className="text-lg font-semibold mb-2">User Profiles</h3>
+        {userProfiles.length > 0 ? (
           <ul>
-            {users.map((user) => (
-              <li key={user.id} className="mb-2">
-                {user.name} ({user.email})
+            {userProfiles.map((profile) => (
+              <li key={profile.id} className="mb-2">
+                {profile.full_name} - {profile.school} ({profile.major})
               </li>
             ))}
           </ul>
         ) : (
-          <p>No users found</p>
+          <p>No user profiles found</p>
         )}
       </div>
     </div>
