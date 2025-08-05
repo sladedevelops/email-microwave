@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "echo 'No linting configured for shared package'",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
