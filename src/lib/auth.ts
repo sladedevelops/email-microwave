@@ -44,23 +44,9 @@ export async function signUp({ email, password, name }: SignUpData): Promise<Aut
       };
     }
 
-    // If signup successful, create user record in our users table
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert([
-          {
-            id: data.user.id,
-            email: data.user.email!,
-            name: name,
-          }
-        ]);
-
-      if (profileError) {
-        console.error('Error creating user profile:', profileError);
-        // Don't fail the signup if profile creation fails
-      }
-    }
+    // Note: We don't need to create a user record in a separate users table
+    // because Supabase Auth already creates the user in auth.users
+    // Profile data will be stored in user_profiles table during onboarding
 
     return {
       user: data.user,
