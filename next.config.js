@@ -5,11 +5,6 @@ const nextConfig = {
     // Add any experimental features here if needed
   },
   
-  // Ensure proper handling of environment variables
-  env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
-  },
-  
   // Optional: Configure headers for security
   async headers() {
     return [
