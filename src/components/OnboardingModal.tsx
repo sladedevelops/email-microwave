@@ -10,6 +10,8 @@ interface OnboardingFormData {
   school: string;
   grade: string;
   major: string;
+  email: string;
+  password: string;
 }
 
 interface OnboardingModalProps {
@@ -27,12 +29,14 @@ const gradeOptions = [
 ];
 
 export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalProps) {
-  const { user } = useAuth();
+  const { signUp } = useAuth();
   const [formData, setFormData] = useState<OnboardingFormData>({
     fullName: '',
     school: '',
     grade: '',
-    major: ''
+    major: '',
+    email: '',
+    password: ''
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<OnboardingFormData>>({});
@@ -44,7 +48,9 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
         fullName: '',
         school: '',
         grade: '',
-        major: ''
+        major: '',
+        email: '',
+        password: ''
       });
       setErrors({});
     }
@@ -69,6 +75,18 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
       newErrors.major = 'Major is required';
     }
 
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -80,56 +98,44 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
       return;
     }
 
-    if (!user) {
-      toast.error('You must be logged in to complete onboarding');
-      return;
-    }
-
     setLoading(true);
 
     try {
+      // First, create the Supabase account
+      const signUpResult = await signUp(formData.email, formData.password, formData.fullName);
+      
+      if (!signUpResult.success) {
+        toast.error(signUpResult.error || 'Failed to create account');
+        return;
+      }
+
+      // Then save the profile information
       const supabase = createClientSupabaseClient();
       
-      // Check if user profile already exists
-      const { data: existingProfile } = await supabase
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Failed to get user information');
+        return;
+      }
+
+      // Save profile information
+      const { error: profileError } = await supabase
         .from('user_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+        .insert({
+          user_id: user.id,
+          full_name: formData.fullName,
+          school: formData.school,
+          grade: formData.grade,
+          major: formData.major,
+          onboarding_completed: true
+        });
 
-      if (existingProfile) {
-        // Update existing profile
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update({
-            full_name: formData.fullName,
-            school: formData.school,
-            grade: formData.grade,
-            major: formData.major,
-            onboarding_completed: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-
-        if (updateError) {
-          throw updateError;
-        }
-      } else {
-        // Create new profile
-        const { error: insertError } = await supabase
-          .from('user_profiles')
-          .insert({
-            user_id: user.id,
-            full_name: formData.fullName,
-            school: formData.school,
-            grade: formData.grade,
-            major: formData.major,
-            onboarding_completed: true
-          });
-
-        if (insertError) {
-          throw insertError;
-        }
+      if (profileError) {
+        console.error('Error saving profile:', profileError);
+        toast.error('Account created but failed to save profile information');
+        return;
       }
 
       // Store onboarding completion in session storage as backup
@@ -137,11 +143,11 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
         sessionStorage.setItem('onboardingCompleted', 'true');
       }
 
-      toast.success('Onboarding completed successfully!');
+      toast.success('Account created and onboarding completed successfully!');
       onComplete();
     } catch (error) {
-      console.error('Error saving onboarding data:', error);
-      toast.error('Failed to save onboarding data. Please try again.');
+      console.error('Onboarding error:', error);
+      toast.error('Failed to complete onboarding. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -179,7 +185,7 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
               Welcome to Email Microwave!
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              Let's get to know you better to personalize your experience.
+              Create your account and let's get to know you better.
             </p>
           </div>
 
@@ -203,6 +209,48 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
               />
               {errors.fullName && (
                 <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email Address *
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  errors.email ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter your email"
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                Password *
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`mt-1 block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                  errors.password ? 'border-red-300' : 'border-gray-300'
+                }`}
+                placeholder="Enter your password"
+              />
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
               )}
             </div>
 
@@ -284,10 +332,10 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
                 {loading ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Completing Onboarding...
+                    Creating Account...
                   </div>
                 ) : (
-                  'Complete Onboarding'
+                  'Create Account & Complete Onboarding'
                 )}
               </button>
             </div>
