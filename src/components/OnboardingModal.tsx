@@ -177,7 +177,15 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
       }
 
       toast.success('Account created and onboarding completed successfully!');
+      
+      // Call onComplete to update the parent component state
       onComplete();
+      
+      // Give the toast time to show before any state updates
+      setTimeout(() => {
+        // Force a small delay to ensure state updates properly
+        window.dispatchEvent(new Event('storage'));
+      }, 500);
     } catch (error) {
       console.error('Onboarding error:', error);
       toast.error('Failed to complete onboarding. Please try again.');

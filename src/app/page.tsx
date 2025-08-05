@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import EmailGenerator from '@/components/EmailGenerator';
@@ -9,9 +9,13 @@ import OnboardingModal from '@/components/OnboardingModal';
 export default function HomePage() {
   const { user, loading } = useAuth();
   const { onboardingCompleted, loading: onboardingLoading, markOnboardingComplete } = useOnboarding();
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Show onboarding modal if user is not authenticated or hasn't completed onboarding
-  const showOnboarding = Boolean((!user && !loading) || (user && !onboardingLoading && onboardingCompleted === false));
+  useEffect(() => {
+    // Show onboarding modal if user is not authenticated or hasn't completed onboarding
+    const shouldShowOnboarding = Boolean((!user && !loading) || (user && !onboardingLoading && onboardingCompleted === false));
+    setShowOnboarding(shouldShowOnboarding);
+  }, [user, loading, onboardingLoading, onboardingCompleted]);
 
   // Show loading spinner while checking authentication and onboarding status
   if (loading || onboardingLoading) {
