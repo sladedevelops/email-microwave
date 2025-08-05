@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'User created successfully. Please check your email to confirm your account.',
+      message: 'Account created and signed in successfully!',
       user: {
         id: result.user?.id,
         email: result.user?.email,

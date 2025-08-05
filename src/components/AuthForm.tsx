@@ -32,14 +32,21 @@ export default function AuthForm({ mode }: AuthFormProps) {
 
       if (result.success) {
         if (mode === 'signup') {
-          toast.success('Account created! Please check your email to confirm your account.');
+          toast.success('Account created and signed in successfully!');
         } else {
           toast.success('Signed in successfully!');
         }
+        // Clear form after successful submission
+        setFormData({
+          email: '',
+          password: '',
+          name: '',
+        });
       } else {
         toast.error(result.error || 'An error occurred');
       }
     } catch (error) {
+      console.error('Auth error:', error);
       toast.error('An unexpected error occurred');
     } finally {
       setLoading(false);
