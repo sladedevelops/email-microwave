@@ -44,9 +44,28 @@ export async function signUp({ email, password, name }: SignUpData): Promise<Aut
       };
     }
 
-    // Note: We don't need to create a user record in a separate users table
-    // because Supabase Auth already creates the user in auth.users
-    // Profile data will be stored in user_profiles table during onboarding
+    // If signup successful, automatically sign in the user
+    if (data.user) {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        console.error('Auto sign-in error:', signInError);
+        // Don't fail the signup if auto sign-in fails
+        return {
+          user: data.user,
+          error: null
+        };
+      }
+
+      // Return the signed-in user
+      return {
+        user: signInData.user,
+        error: null
+      };
+    }
 
     return {
       user: data.user,

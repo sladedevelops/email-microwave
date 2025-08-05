@@ -178,6 +178,10 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
 
       toast.success('Account created and onboarding completed successfully!');
       
+      // Debug: Log the user state
+      console.log('Onboarding completed. User:', user);
+      console.log('Onboarding completed. User ID:', user?.id);
+      
       // Call onComplete to update the parent component state
       onComplete();
       
@@ -185,6 +189,7 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
       setTimeout(() => {
         // Force a small delay to ensure state updates properly
         window.dispatchEvent(new Event('storage'));
+        console.log('Storage event dispatched');
       }, 500);
     } catch (error) {
       console.error('Onboarding error:', error);

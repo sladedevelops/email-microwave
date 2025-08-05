@@ -15,6 +15,9 @@ export default function HomePage() {
     // Show onboarding modal if user is not authenticated or hasn't completed onboarding
     const shouldShowOnboarding = Boolean((!user && !loading) || (user && !onboardingLoading && onboardingCompleted === false));
     setShowOnboarding(shouldShowOnboarding);
+    
+    // Debug: Log authentication state
+    console.log('Auth state:', { user: user?.id, loading, onboardingLoading, onboardingCompleted, shouldShowOnboarding });
   }, [user, loading, onboardingLoading, onboardingCompleted]);
 
   // Show loading spinner while checking authentication and onboarding status
