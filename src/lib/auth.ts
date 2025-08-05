@@ -4,7 +4,11 @@ import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
 
 export const generateToken = (id: string) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET!, {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+  
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   } as any);
 };
@@ -26,8 +30,12 @@ export const verifyToken = async (req: NextRequest) => {
   }
 
   try {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
@@ -40,6 +48,7 @@ export const verifyToken = async (req: NextRequest) => {
 
     return user;
   } catch (error) {
+    console.error('Token verification error:', error);
     return null;
   }
 }; 

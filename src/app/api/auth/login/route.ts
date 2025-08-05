@@ -60,6 +60,16 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    
+    // Handle Prisma connection errors
+    if (error instanceof Error && error.message.includes('prisma')) {
+      console.error('Database connection error:', error);
+      return NextResponse.json(
+        createErrorResponse('Database connection error'),
+        { status: 500 }
+      );
+    }
+    
     console.error('Login error:', error);
     return NextResponse.json(
       createErrorResponse('Server error'),
