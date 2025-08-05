@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentUser);
       } catch (error) {
         console.error('Error initializing auth:', error);
+        // Don't crash the app if auth fails to initialize
       } finally {
         setLoading(false);
       }
@@ -34,12 +35,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth();
 
     // Listen for auth state changes
-    const { data: { subscription } } = onAuthStateChange((user) => {
-      setUser(user);
+    let subscription: any = null;
+    
+    try {
+      const authStateChange = onAuthStateChange((user) => {
+        setUser(user);
+        setLoading(false);
+      });
+      subscription = authStateChange?.data?.subscription;
+    } catch (error) {
+      console.error('Error setting up auth state listener:', error);
       setLoading(false);
-    });
+    }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      if (subscription) {
+        try {
+          subscription.unsubscribe();
+        } catch (error) {
+          console.error('Error unsubscribing from auth state:', error);
+        }
+      }
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

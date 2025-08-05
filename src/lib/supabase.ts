@@ -4,7 +4,7 @@ import type { Database } from '@/types/supabase';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// Create a fallback client for build time
+// Create a fallback client for build time or when env vars are missing
 const createFallbackClient = () => {
   return createClient<Database>('https://fallback.supabase.co', 'fallback-key', {
     auth: {
@@ -29,9 +29,8 @@ export const supabase = supabaseUrl && supabaseAnonKey
 // This version doesn't persist sessions and is optimized for server-side use
 export const createServerSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase environment variables. Please check your .env.local file.'
-    );
+    console.warn('Missing Supabase environment variables. Using fallback client.');
+    return createFallbackClient();
   }
   
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -46,9 +45,8 @@ export const createServerSupabaseClient = () => {
 // This version persists sessions and handles auth state
 export const createClientSupabaseClient = () => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase environment variables. Please check your .env.local file.'
-    );
+    console.warn('Missing Supabase environment variables. Using fallback client.');
+    return createFallbackClient();
   }
   
   return createClient<Database>(supabaseUrl, supabaseAnonKey, {
