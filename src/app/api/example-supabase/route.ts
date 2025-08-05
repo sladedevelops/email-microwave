@@ -5,9 +5,9 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient();
     
-    // Example: Fetch users from Supabase
-    const { data: users, error } = await supabase
-      .from('users')
+    // Example: Fetch user profiles from Supabase
+    const { data: userProfiles, error } = await supabase
+      .from('user_profiles')
       .select('*')
       .limit(10);
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: users,
+      data: userProfiles,
     });
   } catch (error) {
     console.error('API error:', error);
@@ -37,9 +37,9 @@ export async function POST(request: NextRequest) {
     const supabase = createServerSupabaseClient();
     const body = await request.json();
     
-    // Example: Insert a new user
-    const { data: newUser, error } = await supabase
-      .from('users')
+    // Example: Insert a new user profile
+    const { data: newProfile, error } = await supabase
+      .from('user_profiles')
       .insert([body])
       .select()
       .single();
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: newUser,
+      data: newProfile,
     }, { status: 201 });
   } catch (error) {
     console.error('API error:', error);
