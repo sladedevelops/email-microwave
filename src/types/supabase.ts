@@ -32,6 +32,41 @@ export interface Database {
           updated_at?: string
         }
       }
+      user_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          full_name: string
+          school: string
+          grade: string
+          major: string
+          onboarding_completed: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          full_name: string
+          school: string
+          grade: string
+          major: string
+          onboarding_completed?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          full_name?: string
+          school?: string
+          grade?: string
+          major?: string
+          onboarding_completed?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
       emails: {
         Row: {
           id: string

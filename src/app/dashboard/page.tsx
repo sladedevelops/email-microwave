@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { PlusIcon, EnvelopeIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { Email } from '@/types';
 import CreateEmailModal from '@/components/CreateEmailModal';
 
@@ -18,17 +19,24 @@ export default function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
+  const { onboardingCompleted, loading: onboardingLoading } = useOnboarding();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !onboardingLoading && !user) {
       router.push('/');
       return;
     }
     
-    if (user) {
+    // Redirect to home if user hasn't completed onboarding
+    if (!loading && !onboardingLoading && user && onboardingCompleted === false) {
+      router.push('/');
+      return;
+    }
+    
+    if (user && onboardingCompleted === true) {
       fetchEmails();
     }
-  }, [user, loading, router]);
+  }, [user, loading, onboardingLoading, onboardingCompleted, router]);
 
   const fetchEmails = async () => {
     try {
@@ -102,8 +110,8 @@ export default function DashboardPage() {
     }
   };
 
-  // Show loading spinner while checking authentication
-  if (loading) {
+  // Show loading spinner while checking authentication and onboarding status
+  if (loading || onboardingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -111,8 +119,8 @@ export default function DashboardPage() {
     );
   }
 
-  // Redirect if not authenticated
-  if (!user) {
+  // Redirect if not authenticated or onboarding not completed
+  if (!user || onboardingCompleted === false) {
     return null;
   }
 

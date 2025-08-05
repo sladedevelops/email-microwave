@@ -13,6 +13,20 @@ CREATE TABLE IF NOT EXISTS public.users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Create user_profiles table for onboarding data
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
+    full_name VARCHAR(255) NOT NULL,
+    school VARCHAR(255) NOT NULL,
+    grade VARCHAR(50) NOT NULL,
+    major VARCHAR(255) NOT NULL,
+    onboarding_completed BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(user_id)
+);
+
 -- Create emails table
 CREATE TABLE IF NOT EXISTS public.emails (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
@@ -28,6 +42,8 @@ CREATE TABLE IF NOT EXISTS public.emails (
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_user_id ON public.user_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_onboarding ON public.user_profiles(onboarding_completed);
 CREATE INDEX IF NOT EXISTS idx_emails_status ON public.emails(status);
 CREATE INDEX IF NOT EXISTS idx_emails_created_at ON public.emails(created_at);
 
@@ -45,12 +61,17 @@ CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON public.users 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_user_profiles_updated_at 
+    BEFORE UPDATE ON public.user_profiles 
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_emails_updated_at 
     BEFORE UPDATE ON public.emails 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Set up Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.emails ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for users table
@@ -62,6 +83,16 @@ CREATE POLICY "Users can update their own data" ON public.users
 
 CREATE POLICY "Users can insert their own data" ON public.users
     FOR INSERT WITH CHECK (auth.uid()::text = id::text);
+
+-- Create policies for user_profiles table
+CREATE POLICY "Users can view their own profile" ON public.user_profiles
+    FOR SELECT USING (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Users can update their own profile" ON public.user_profiles
+    FOR UPDATE USING (auth.uid()::text = user_id::text);
+
+CREATE POLICY "Users can insert their own profile" ON public.user_profiles
+    FOR INSERT WITH CHECK (auth.uid()::text = user_id::text);
 
 -- Create policies for emails table
 CREATE POLICY "Users can view their own emails" ON public.emails
