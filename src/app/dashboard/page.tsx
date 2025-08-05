@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { PlusIcon, EnvelopeIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useAuthStore } from '@/stores/authStore';
-import { Email } from '@email-microwave/shared';
+import { Email } from '@/types';
 import CreateEmailModal from '@/components/CreateEmailModal';
 
 interface EmailWithStatus extends Email {

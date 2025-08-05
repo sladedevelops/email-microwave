@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from '@email-microwave/shared';
+import { User } from '@/types';
 
 interface AuthState {
   user: User | null;

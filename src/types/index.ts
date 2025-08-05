@@ -15,6 +15,19 @@ export interface User {
   updatedAt: Date;
 }
 
+// Email types
+export interface Email {
+  id: string;
+  subject: string;
+  content: string;
+  fromEmail: string;
+  toEmail: string;
+  status: 'PENDING' | 'SENT' | 'FAILED';
+  sentAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Auth types
 export interface LoginRequest {
   email: string;
@@ -27,10 +40,10 @@ export interface RegisterRequest {
   name: string;
 }
 
-export interface AuthResponse {
+export interface AuthResponse extends ApiResponse<{
   user: User;
   token: string;
-}
+}> {}
 
 // Common utility types
 export type Status = 'idle' | 'loading' | 'success' | 'error';

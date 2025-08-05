@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-hot-toast';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { AuthResponse, LoginRequest, RegisterRequest } from '@email-microwave/shared';
+import { AuthResponse, LoginRequest, RegisterRequest } from '@/types';
 import { useAuthStore } from '@/stores/authStore';
 
 type AuthMode = 'login' | 'register';
