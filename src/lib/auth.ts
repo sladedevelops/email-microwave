@@ -1,54 +1,163 @@
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import { NextRequest } from 'next/server';
-import { prisma } from './prisma';
+import { createClientSupabaseClient } from './supabase';
+import { User } from '@supabase/supabase-js';
 
-export const generateToken = (id: string) => {
-  if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET is not defined');
-  }
-  
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-  } as any);
-};
+export interface AuthError {
+  message: string;
+  status?: number;
+}
 
-export const hashPassword = async (password: string) => {
-  const salt = await bcrypt.genSalt(10);
-  return bcrypt.hash(password, salt);
-};
+export interface SignUpData {
+  email: string;
+  password: string;
+  name: string;
+}
 
-export const comparePassword = async (password: string, hashedPassword: string) => {
-  return bcrypt.compare(password, hashedPassword);
-};
+export interface SignInData {
+  email: string;
+  password: string;
+}
 
-export const verifyToken = async (req: NextRequest) => {
-  const authHeader = req.headers.get('authorization');
-  
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
+export interface AuthResponse {
+  user: User | null;
+  error: AuthError | null;
+}
 
+// Sign up with email and password
+export async function signUp({ email, password, name }: SignUpData): Promise<AuthResponse> {
   try {
-    if (!process.env.JWT_SECRET) {
-      throw new Error('JWT_SECRET is not defined');
-    }
-
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
+    const supabase = createClientSupabaseClient();
     
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: {
-        id: true,
-        email: true,
-        name: true,
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name,
+        },
       },
     });
 
+    if (error) {
+      return {
+        user: null,
+        error: { message: error.message, status: 400 }
+      };
+    }
+
+    // If signup successful, create user record in our users table
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('users')
+        .insert([
+          {
+            id: data.user.id,
+            email: data.user.email!,
+            name: name,
+          }
+        ]);
+
+      if (profileError) {
+        console.error('Error creating user profile:', profileError);
+        // Don't fail the signup if profile creation fails
+      }
+    }
+
+    return {
+      user: data.user,
+      error: null
+    };
+  } catch (error) {
+    console.error('Sign up error:', error);
+    return {
+      user: null,
+      error: { message: 'An unexpected error occurred', status: 500 }
+    };
+  }
+}
+
+// Sign in with email and password
+export async function signIn({ email, password }: SignInData): Promise<AuthResponse> {
+  try {
+    const supabase = createClientSupabaseClient();
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return {
+        user: null,
+        error: { message: error.message, status: 400 }
+      };
+    }
+
+    return {
+      user: data.user,
+      error: null
+    };
+  } catch (error) {
+    console.error('Sign in error:', error);
+    return {
+      user: null,
+      error: { message: 'An unexpected error occurred', status: 500 }
+    };
+  }
+}
+
+// Sign out
+export async function signOut(): Promise<{ error: AuthError | null }> {
+  try {
+    const supabase = createClientSupabaseClient();
+    
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      return {
+        error: { message: error.message, status: 400 }
+      };
+    }
+
+    return { error: null };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    return {
+      error: { message: 'An unexpected error occurred', status: 500 }
+    };
+  }
+}
+
+// Get current user
+export async function getCurrentUser(): Promise<User | null> {
+  try {
+    const supabase = createClientSupabaseClient();
+    
+    const { data: { user } } = await supabase.auth.getUser();
     return user;
   } catch (error) {
-    console.error('Token verification error:', error);
+    console.error('Get current user error:', error);
     return null;
   }
-}; 
+}
+
+// Get current session
+export async function getCurrentSession() {
+  try {
+    const supabase = createClientSupabaseClient();
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    return session;
+  } catch (error) {
+    console.error('Get current session error:', error);
+    return null;
+  }
+}
+
+// Listen to auth state changes
+export function onAuthStateChange(callback: (user: User | null) => void) {
+  const supabase = createClientSupabaseClient();
+  
+  return supabase.auth.onAuthStateChange((event, session) => {
+    callback(session?.user ?? null);
+  });
+} 

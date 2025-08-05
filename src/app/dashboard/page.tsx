@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { PlusIcon, EnvelopeIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { Email } from '@/types';
 import CreateEmailModal from '@/components/CreateEmailModal';
 
@@ -17,27 +17,26 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const router = useRouter();
-  const { user, token, isAuthenticated, logout } = useAuthStore();
+  const { user, loading, signOut } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!loading && !user) {
       router.push('/');
       return;
     }
-    fetchEmails();
-  }, [isAuthenticated, router]);
+    
+    if (user) {
+      fetchEmails();
+    }
+  }, [user, loading, router]);
 
   const fetchEmails = async () => {
     try {
-      const response = await fetch('/api/emails', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch('/api/emails');
 
       if (!response.ok) {
         if (response.status === 401) {
-          logout();
+          await signOut();
           router.push('/');
           return;
         }
@@ -55,10 +54,14 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-    toast.success('Logged out successfully');
+  const handleLogout = async () => {
+    const result = await signOut();
+    if (result.success) {
+      router.push('/');
+      toast.success('Logged out successfully');
+    } else {
+      toast.error('Failed to log out');
+    }
   };
 
   const handleEmailCreated = () => {
@@ -73,9 +76,6 @@ export default function DashboardPage() {
     try {
       const response = await fetch(`/api/emails/${emailId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
       });
 
       if (!response.ok) {
@@ -102,7 +102,17 @@ export default function DashboardPage() {
     }
   };
 
-  if (!isAuthenticated) {
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  // Redirect if not authenticated
+  if (!user) {
     return null;
   }
 
@@ -114,19 +124,19 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600">Welcome back, {user?.name}!</p>
+              <p className="text-gray-600">Welcome back, {user.user_metadata?.name || user.email}!</p>
             </div>
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="btn-primary flex items-center space-x-2"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                <PlusIcon className="h-5 w-5" />
+                <PlusIcon className="h-5 w-5 mr-2" />
                 <span>New Email</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="btn-secondary"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 Logout
               </button>
@@ -138,7 +148,7 @@ export default function DashboardPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <div className="card">
+          <div className="bg-white shadow rounded-lg">
             <div className="px-4 py-5 sm:p-6">
               <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
                 Your Emails
@@ -146,7 +156,7 @@ export default function DashboardPage() {
 
               {isLoading ? (
                 <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                 </div>
               ) : emails.length === 0 ? (
                 <div className="text-center py-8">
@@ -158,7 +168,7 @@ export default function DashboardPage() {
                   <div className="mt-6">
                     <button
                       onClick={() => setShowCreateModal(true)}
-                      className="btn-primary"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                       <PlusIcon className="h-5 w-5 mr-2" />
                       Create Email
