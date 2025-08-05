@@ -7,8 +7,8 @@ import { getCurrentUser, onAuthStateChange } from '@/lib/auth';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>;
+  signUp: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string; user?: User }>;
   signOut: () => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: data.error };
       }
 
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (error) {
       console.error('Sign in error:', error);
       return { success: false, error: 'An unexpected error occurred' };
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: data.error };
       }
 
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (error) {
       console.error('Sign up error:', error);
       return { success: false, error: 'An unexpected error occurred' };

@@ -109,15 +109,43 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
         return;
       }
 
+      // Wait a moment for the session to be established
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Then save the profile information
       const supabase = createClientSupabaseClient();
       
-      // Get the current user
-      const { data: { user } } = await supabase.auth.getUser();
+      // Get the current user with retry logic
+      let user = null;
+      let retries = 0;
+      const maxRetries = 3;
+      
+      while (!user && retries < maxRetries) {
+        const { data: { user: currentUser }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('Error getting user:', error);
+        }
+        
+        if (currentUser) {
+          user = currentUser;
+          break;
+        }
+        
+        retries++;
+        if (retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
       
       if (!user) {
-        toast.error('Failed to get user information');
-        return;
+        // If we still can't get the user, try to get it from the signup result
+        if (signUpResult.user) {
+          user = signUpResult.user;
+        } else {
+          toast.error('Failed to get user information. Please try signing in manually.');
+          return;
+        }
       }
 
       // Save profile information
