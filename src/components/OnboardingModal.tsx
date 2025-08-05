@@ -148,20 +148,25 @@ export default function OnboardingModal({ isOpen, onComplete }: OnboardingModalP
         }
       }
 
-      // Save profile information
-      const { error: profileError } = await supabase
-        .from('user_profiles')
-        .insert({
+      // Save profile information using server-side API
+      const profileResponse = await fetch('/api/user-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           user_id: user.id,
           full_name: formData.fullName,
           school: formData.school,
           grade: formData.grade,
-          major: formData.major,
-          onboarding_completed: true
-        });
+          major: formData.major
+        }),
+      });
 
-      if (profileError) {
-        console.error('Error saving profile:', profileError);
+      const profileResult = await profileResponse.json();
+
+      if (!profileResult.success) {
+        console.error('Error saving profile:', profileResult.error);
         toast.error('Account created but failed to save profile information');
         return;
       }
